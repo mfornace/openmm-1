@@ -51,12 +51,12 @@ namespace OpenMM {
 
 class OPENMM_EXPORT_PME CpuCalcPmeReciprocalForceKernel : public CalcPmeReciprocalForceKernel {
 public:
-    CpuCalcPmeReciprocalForceKernel(const std::string& name, const Platform& platform) : CalcPmeReciprocalForceKernel(name, platform),
+    CpuCalcPmeReciprocalForceKernel(std::string name, const Platform& platform) : CalcPmeReciprocalForceKernel(name, platform),
             hasCreatedPlan(false), isDeleted(false), realGrid(NULL), complexGrid(NULL) {
     }
     /**
      * Initialize the kernel.
-     * 
+     *
      * @param gridx        the x size of the PME grid
      * @param gridy        the y size of the PME grid
      * @param gridz        the z size of the PME grid
@@ -64,75 +64,75 @@ public:
      * @param alpha        the Ewald blending parameter
      * @param deterministic whether it should attempt to make the resulting forces deterministic
      */
-    void initialize(int xsize, int ysize, int zsize, int numParticles, double alpha, bool deterministic);
+    void initialize(int xsize, int ysize, int zsize, int numParticles, double alpha, bool deterministic) override;
     ~CpuCalcPmeReciprocalForceKernel();
     /**
      * Begin computing the force and energy.
-     * 
+     *
      * @param io                  an object that coordinates data transfer
      * @param periodicBoxVectors  the vectors defining the periodic box (measured in nm)
      * @param includeEnergy       true if potential energy should be computed
      */
-    void beginComputation(IO& io, const Vec3* periodicBoxVectors, bool includeEnergy);
+    void beginComputation(IO& io, const Vec3* periodicBoxVectors, bool includeEnergy) override;
     /**
      * Finish computing the force and energy.
-     * 
+     *
      * @param io   an object that coordinates data transfer
      * @return the potential energy due to the PME reciprocal space interactions
      */
-    double finishComputation(IO& io);
+    double finishComputation(IO& io) override;
     /**
      * This routine contains the code executed by the main thread.
      */
-    void runMainThread();
+    // void runMainThread();
     /**
      * This routine contains the code executed by each worker thread.
      */
-    void runWorkerThread(ThreadPool& threads, int index);
+    // void runWorkerThread(ThreadPool& threads, int index);
     /**
      * Get whether the current CPU supports all features needed by this kernel.
      */
     static bool isProcessorSupported();
     /**
      * Get the parameters being used for PME.
-     * 
+     *
      * @param alpha   the separation parameter
      * @param nx      the number of grid points along the X axis
      * @param ny      the number of grid points along the Y axis
      * @param nz      the number of grid points along the Z axis
      */
-    void getPMEParameters(double& alpha, int& nx, int& ny, int& nz) const;
+    void getPMEParameters(double& alpha, int& nx, int& ny, int& nz) const override;
 private:
     /**
      * Select a size for one grid dimension that FFTW can handle efficiently.
      */
     int findFFTDimension(int minimum, bool isZ);
-    static bool hasInitializedThreads;
-    static int numThreads;
+    // static bool hasInitializedThreads;
+    // static int numThreads;
     int gridx, gridy, gridz, numParticles;
     double alpha;
     bool deterministic;
-    bool hasCreatedPlan, isFinished, isDeleted;
+    bool hasCreatedPlan, isDeleted;
     std::vector<float> force;
     std::vector<float> bsplineModuli[3];
     std::vector<float> recipEterm;
     Vec3 lastBoxVectors[3];
-    std::vector<float> threadEnergy;
+    // std::vector<float> threadEnergy;
     std::vector<float*> tempGrid;
     float* realGrid;
     fftwf_complex* complexGrid;
     fftwf_plan forwardFFT, backwardFFT;
     int waitCount;
-    pthread_cond_t startCondition, endCondition;
-    pthread_mutex_t lock;
-    pthread_t mainThread;
+    // pthread_cond_t startCondition, endCondition;
+    // pthread_mutex_t lock;
+    // pthread_t mainThread;
     // The following variables are used to store information about the calculation currently being performed.
     IO* io;
     float energy;
     float* posq;
     Vec3 periodicBoxVectors[3], recipBoxVectors[3];
     bool includeEnergy;
-    std::atomic<int> atomicCounter;
+    // std::atomic<int> atomicCounter;
 };
 
 
@@ -144,12 +144,12 @@ private:
 
 class OPENMM_EXPORT_PME CpuCalcDispersionPmeReciprocalForceKernel : public CalcDispersionPmeReciprocalForceKernel {
 public:
-    CpuCalcDispersionPmeReciprocalForceKernel(const std::string& name, const Platform& platform) : CalcDispersionPmeReciprocalForceKernel(name, platform),
+    CpuCalcDispersionPmeReciprocalForceKernel(std::string name, const Platform& platform) : CalcDispersionPmeReciprocalForceKernel(name, platform),
             hasCreatedPlan(false), isDeleted(false), realGrid(NULL), complexGrid(NULL)  {
     }
     /**
      * Initialize the kernel.
-     * 
+     *
      * @param gridx        the x size of the PME grid
      * @param gridy        the y size of the PME grid
      * @param gridz        the z size of the PME grid
@@ -161,7 +161,7 @@ public:
     ~CpuCalcDispersionPmeReciprocalForceKernel();
     /**
      * Begin computing the force and energy.
-     * 
+     *
      * @param io                  an object that coordinates data transfer
      * @param periodicBoxVectors  the vectors defining the periodic box (measured in nm)
      * @param includeEnergy       true if potential energy should be computed
@@ -169,7 +169,7 @@ public:
     void beginComputation(CalcPmeReciprocalForceKernel::IO& io, const Vec3* periodicBoxVectors, bool includeEnergy);
     /**
      * Finish computing the force and energy.
-     * 
+     *
      * @param io   an object that coordinates data transfer
      * @return the potential energy due to the PME reciprocal space interactions
      */
@@ -177,18 +177,18 @@ public:
     /**
      * This routine contains the code executed by the main thread.
      */
-    void runMainThread();
+    // void runMainThread() override;
     /**
      * This routine contains the code executed by each worker thread.
      */
-    void runWorkerThread(ThreadPool& threads, int index);
+    // void runWorkerThread(ThreadPool& threads, int index) override;
     /**
      * Get whether the current CPU supports all features needed by this kernel.
      */
     static bool isProcessorSupported();
     /**
      * Get the parameters being used for PME.
-     * 
+     *
      * @param alpha   the separation parameter
      * @param nx      the number of grid points along the X axis
      * @param ny      the number of grid points along the Y axis
@@ -201,32 +201,32 @@ private:
      * Select a size for one grid dimension that FFTW can handle efficiently.
      */
     int findFFTDimension(int minimum, bool isZ);
-    static bool hasInitializedThreads;
-    static int numThreads;
+    // static bool hasInitializedThreads;
+    // static int numThreads;
     int gridx, gridy, gridz, numParticles;
     double alpha;
     bool deterministic;
-    bool hasCreatedPlan, isFinished, isDeleted;
+    bool hasCreatedPlan, isDeleted;
     std::vector<float> force;
     std::vector<float> bsplineModuli[3];
     std::vector<float> recipEterm;
     Vec3 lastBoxVectors[3];
-    std::vector<float> threadEnergy;
+    // std::vector<float> threadEnergy;
     std::vector<float*> tempGrid;
     float* realGrid;
     fftwf_complex* complexGrid;
     fftwf_plan forwardFFT, backwardFFT;
     int waitCount;
-    pthread_cond_t startCondition, endCondition;
-    pthread_mutex_t lock;
-    pthread_t mainThread;
+    // pthread_cond_t startCondition, endCondition;
+    // pthread_mutex_t lock;
+    // pthread_t mainThread;
     // The following variables are used to store information about the calculation currently being performed.
     CalcPmeReciprocalForceKernel::IO* io;
     float energy;
     float* posq;
     Vec3 periodicBoxVectors[3], recipBoxVectors[3];
     bool includeEnergy;
-    std::atomic<int> atomicCounter;
+    // std::atomic<int> atomicCounter;
 };
 
 } // namespace OpenMM

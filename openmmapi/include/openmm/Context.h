@@ -50,14 +50,14 @@ class Platform;
 
 /**
  * A Context stores the complete state of a simulation.  More specifically, it includes:
- * 
+ *
  * <ul>
  * <li>The current time</li>
  * <li>The position of each particle</li>
  * <li>The velocity of each particle</li>
  * <li>The values of configurable parameters defined by Force objects in the System</li>
  * </ul>
- * 
+ *
  * You can retrieve a snapshot of the current state at any time by calling getState().  This
  * allows you to record the state of the simulation at various points, either for analysis
  * or for checkpointing.  getState() can also be used to retrieve the current forces on each
@@ -68,7 +68,7 @@ class OPENMM_EXPORT Context {
 public:
     /**
      * Construct a new Context in which to run a simulation.
-     * 
+     *
      * @param system      the System which will be simulated
      * @param integrator  the Integrator which will be used to simulate the System
      */
@@ -76,7 +76,7 @@ public:
     /**
      * Construct a new Context in which to run a simulation, explicitly specifying what Platform should be used
      * to perform calculations.
-     * 
+     *
      * @param system      the System which will be simulated
      * @param integrator  the Integrator which will be used to simulate the System
      * @param platform    the Platform to use for calculations
@@ -115,7 +115,7 @@ public:
     Platform& getPlatform();
     /**
      * Get a State object recording the current state information stored in this context.
-     * 
+     *
      * @param types the set of data types which should be stored in the State object.  This
      * should be a union of DataType values, e.g. (State::Positions | State::Velocities).
      * @param enforcePeriodicBox if false, the position of each particle will be whatever position
@@ -130,7 +130,7 @@ public:
      * approximately the same state it was in when the State was created.  If the State does not include
      * a piece of information (e.g. positions or velocities), that aspect of the Context is
      * left unchanged.
-     * 
+     *
      * Even when all possible information is included in the State, the effect of calling this method
      * is still less complete than loadCheckpoint().  For example, it does not restore the internal
      * states of random number generators.  On the other hand, it has the advantage of not being hardware
@@ -145,14 +145,14 @@ public:
      * Set the positions of all particles in the System (measured in nm).  This method simply sets the positions
      * without checking to see whether they satisfy distance constraints.  If you want constraints to be
      * enforced, call applyConstraints() after setting the positions.
-     * 
+     *
      * @param positions   a vector whose length equals the number of particles in the System.  The i'th element
      * contains the position of the i'th particle.
      */
     void setPositions(const std::vector<Vec3>& positions);
     /**
      * Set the velocities of all particles in the System (measured in nm/picosecond).
-     * 
+     *
      * @param velocities  a vector whose length equals the number of particles in the System.  The i'th element
      * contains the velocity of the i'th particle.
      */
@@ -160,7 +160,7 @@ public:
     /**
      * Set the velocities of all particles in the System to random values chosen from a Boltzmann
      * distribution at a given temperature.
-     * 
+     *
      * @param temperature    the temperature for which to select the velocities (measured in Kelvin)
      * @param randomSeed     the random number seed to use when selecting velocities
      */
@@ -172,13 +172,13 @@ public:
     const std::map<std::string, double>& getParameters() const;
     /**
      * Get the value of an adjustable parameter defined by a Force object in the System.
-     * 
+     *
      * @param name the name of the parameter to get
      */
     double getParameter(const std::string& name) const;
     /**
      * Set the value of an adjustable parameter defined by a Force object in the System.
-     * 
+     *
      * @param name  the name of the parameter to set
      * @param value the value of the parameter
      */
@@ -222,12 +222,12 @@ public:
      * modified, the Context does not see the changes.  Call reinitialize() to force
      * the Context to rebuild its internal representation of the System and pick up any changes
      * that have been made.
-     * 
+     *
      * This is an expensive operation, so you should try to avoid calling it too frequently.
      * Most Force classes have an updateParametersInContext() method that provides a less expensive
      * way of updating certain types of information.  However, this method is the only way to
      * make some types of changes, so it is sometimes necessary to call it.
-     * 
+     *
      * By default, reinitializing a Context causes all state information (positions, velocities,
      * etc.) to be discarded.  You can optionally tell it to try to preserve state information.
      * It does this by internally creating a checkpoint, then reinitializing the Context, then
@@ -239,27 +239,27 @@ public:
     /**
      * Create a checkpoint recording the current state of the Context.  This should be treated
      * as an opaque block of binary data.  See loadCheckpoint() for more details.
-     * 
+     *
      * @param stream    an output stream the checkpoint data should be written to
      */
     void createCheckpoint(std::ostream& stream);
     /**
      * Load a checkpoint that was written by createCheckpoint().
-     * 
+     *
      * A checkpoint contains not only publicly visible data such as the particle positions and
      * velocities, but also internal data such as the states of random number generators.  Ideally,
      * loading a checkpoint should restore the Context to an identical state to when it was written,
      * such that continuing the simulation will produce an identical trajectory.  This is not strictly
      * guaranteed to be true, however, and should not be relied on.  For most purposes, however, the
      * internal state should be close enough to be reasonably considered equivalent.
-     * 
+     *
      * A checkpoint contains data that is highly specific to the Context from which it was created.
      * It depends on the details of the System, the Platform being used, and the hardware and software
      * of the computer it was created on.  If you try to load it on a computer with different hardware,
      * or for a System that is different in any way, loading is likely to fail.  Checkpoints created
      * with different versions of OpenMM are also often incompatible.  If a checkpoint cannot be loaded,
      * that is signaled by throwing an exception.
-     * 
+     *
      * @param stream    an input stream the checkpoint data should be read from
      */
     void loadCheckpoint(std::istream& stream);
@@ -272,7 +272,7 @@ public:
      * belong to exactly one molecule.
      */
     const std::vector<std::vector<int> >& getMolecules() const;
-private:
+// private:
     friend class ContextImpl;
     friend class Force;
     friend class ForceImpl;
