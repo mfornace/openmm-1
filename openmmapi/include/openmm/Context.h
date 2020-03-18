@@ -64,6 +64,8 @@ class Platform;
  * particle and the current energy of the System.
  */
 
+struct ContextAccess;
+
 class OPENMM_EXPORT Context {
 public:
     /**
@@ -272,8 +274,9 @@ public:
      * belong to exactly one molecule.
      */
     const std::vector<std::vector<int> >& getMolecules() const;
-// private:
+private:
     friend class ContextImpl;
+    friend class ContextAccess;
     friend class Force;
     friend class ForceImpl;
     friend class Platform;

@@ -3,9 +3,12 @@
 #############################################
 
 # OPENMM_PYTHON_STAGING_DIR is a staging area for python, swig, and C files in the python package we are making.
-set(OPENMM_PYTHON_STAGING_DIR "${CMAKE_BINARY_DIR}/python"
+set(OPENMM_PYTHON_STAGING_DIR "${CMAKE_CURRENT_BINARY_DIR}/python"
     CACHE PATH "Temporary staging area for Python API wrappers")
 mark_as_advanced(OPENMM_PYTHON_STAGING_DIR)
+
+set(CHANGE_CMAKE_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+message("Using source directory for OpenMM: ${CHANGE_CMAKE_SOURCE_DIR}")
 
 # Create package directory structure
 file(MAKE_DIRECTORY ${OPENMM_PYTHON_STAGING_DIR}/simtk/openmm)
@@ -29,7 +32,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/setup.py ${OPENMM_PYTHON_STAGING_DIR}
 ###########################################################
 execute_process(
   COMMAND git rev-parse HEAD
-  WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+  WORKING_DIRECTORY "${CHANGE_CMAKE_SOURCE_DIR}"
   OUTPUT_VARIABLE rev_hash_str
   OUTPUT_STRIP_TRAILING_WHITESPACE
   ERROR_QUIET
@@ -39,7 +42,7 @@ if(NOT rev_hash_str)
 endif()
 file(WRITE "${OPENMM_PYTHON_STAGING_DIR}/simtk/openmm/version.py" "git_revision = '${rev_hash_str}'\n")
 
-# file(GLOB_RECURSE temp RELATIVE "${CMAKE_SOURCE_DIR}" "${CMAKE_SOURCE_DIR}/src/*.i")
+# file(GLOB_RECURSE temp RELATIVE "${CHANGE_CMAKE_SOURCE_DIR}" "${CHANGE_CMAKE_SOURCE_DIR}/src/*.i")
 # foreach(f ${temp})
 #     set(temp2 "${temp2}\n${f}")
 # endforeach()
@@ -219,9 +222,9 @@ SET(WRAPPER_INCLUDE_DIRS) # start empty
 FOREACH(subdir ${WRAPPER_BASE_SUBDIRS})
     # append
     SET(WRAPPER_INCLUDE_DIRS ${WRAPPER_INCLUDE_DIRS}
-                         ${CMAKE_SOURCE_DIR}/${subdir}/include
-                         ${CMAKE_SOURCE_DIR}/${subdir}/include/openmm
-                         ${CMAKE_SOURCE_DIR}/${subdir}/include/openmm/internal)
+                         ${CHANGE_CMAKE_SOURCE_DIR}/${subdir}/include
+                         ${CHANGE_CMAKE_SOURCE_DIR}/${subdir}/include/openmm
+                         ${CHANGE_CMAKE_SOURCE_DIR}/${subdir}/include/openmm/internal)
 ENDFOREACH(subdir)
 
 ###########################################################################
