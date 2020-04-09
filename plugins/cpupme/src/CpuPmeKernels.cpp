@@ -47,6 +47,8 @@
 using namespace OpenMM;
 using namespace std;
 
+std::mutex fftw_mutex;
+
 static const int PME_ORDER = 5;
 
 // bool CpuCalcDispersionPmeReciprocalForceKernel::hasInitializedThreads = false;
@@ -451,7 +453,7 @@ void CpuCalcPmeReciprocalForceKernel::initialize(int xsize, int ysize, int zsize
 
     // Initialize FFTW.
     {
-    std::lock_guard lock(fftw_mutex);
+    std::lock_guard<std::mutex> lock(fftw_mutex);
     // for (int i = 0; i < numThreads; i++)
     tempGrid.push_back((float*) fftwf_malloc(sizeof(float)*(gridx*gridy*gridz+3)));
     realGrid = tempGrid[0];
@@ -519,7 +521,7 @@ void CpuCalcPmeReciprocalForceKernel::initialize(int xsize, int ysize, int zsize
 
 CpuCalcPmeReciprocalForceKernel::~CpuCalcPmeReciprocalForceKernel() {
     // isDeleted = true;
-    std::lock_guard lock(fftw_mutex);
+    std::lock_guard<std::mutex> lock(fftw_mutex);
     for (auto grid : tempGrid)
         fftwf_free(grid);
     if (complexGrid != NULL)
@@ -660,8 +662,6 @@ int CpuCalcPmeReciprocalForceKernel::findFFTDimension(int minimum, bool isZ) {
 //     return 0;
 // }
 
-std::mutex fftw_mutex;
-
 void CpuCalcDispersionPmeReciprocalForceKernel::initialize(int xsize, int ysize, int zsize, int numParticles, double alpha, bool deterministic) {
 //     if (!hasInitializedThreads) {
 //         numThreads = getNumProcessors();
@@ -683,7 +683,7 @@ void CpuCalcDispersionPmeReciprocalForceKernel::initialize(int xsize, int ysize,
 
     // Initialize FFTW.
     {
-    std::lock_guard lock(fftw_mutex);
+    std::lock_guard<std::mutex> lock(fftw_mutex);
     // for (int i = 0; i < numThreads; i++)
     tempGrid.push_back((float*) fftwf_malloc(sizeof(float)*(gridx*gridy*gridz+3)));
     realGrid = tempGrid[0];
@@ -752,7 +752,7 @@ void CpuCalcDispersionPmeReciprocalForceKernel::initialize(int xsize, int ysize,
 
 CpuCalcDispersionPmeReciprocalForceKernel::~CpuCalcDispersionPmeReciprocalForceKernel() {
     isDeleted = true;
-    std::lock_guard lock(fftw_mutex);
+    std::lock_guard<std::mutex> lock(fftw_mutex);
     for (auto grid : tempGrid)
         fftwf_free(grid);
     if (complexGrid != NULL)
