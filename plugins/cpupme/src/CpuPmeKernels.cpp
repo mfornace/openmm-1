@@ -42,6 +42,7 @@
 #include <cstring>
 #include <sstream>
 #include <cstdlib>
+#include <mutex>
 
 using namespace OpenMM;
 using namespace std;
@@ -449,7 +450,8 @@ void CpuCalcPmeReciprocalForceKernel::initialize(int xsize, int ysize, int zsize
     // pthread_mutex_unlock(&lock);
 
     // Initialize FFTW.
-
+    {
+    std::lock_guard lock(fftw_mutex);
     // for (int i = 0; i < numThreads; i++)
     tempGrid.push_back((float*) fftwf_malloc(sizeof(float)*(gridx*gridy*gridz+3)));
     realGrid = tempGrid[0];
@@ -458,7 +460,7 @@ void CpuCalcPmeReciprocalForceKernel::initialize(int xsize, int ysize, int zsize
     forwardFFT = fftwf_plan_dft_r2c_3d(gridx, gridy, gridz, realGrid, complexGrid, FFTW_MEASURE);
     backwardFFT = fftwf_plan_dft_c2r_3d(gridx, gridy, gridz, complexGrid, realGrid, FFTW_MEASURE);
     hasCreatedPlan = true;
-
+    }
     // Initialize the b-spline moduli.
 
     int maxSize = std::max(std::max(gridx, gridy), gridz);
@@ -517,6 +519,7 @@ void CpuCalcPmeReciprocalForceKernel::initialize(int xsize, int ysize, int zsize
 
 CpuCalcPmeReciprocalForceKernel::~CpuCalcPmeReciprocalForceKernel() {
     // isDeleted = true;
+    std::lock_guard lock(fftw_mutex);
     for (auto grid : tempGrid)
         fftwf_free(grid);
     if (complexGrid != NULL)
@@ -657,6 +660,8 @@ int CpuCalcPmeReciprocalForceKernel::findFFTDimension(int minimum, bool isZ) {
 //     return 0;
 // }
 
+std::mutex fftw_mutex;
+
 void CpuCalcDispersionPmeReciprocalForceKernel::initialize(int xsize, int ysize, int zsize, int numParticles, double alpha, bool deterministic) {
 //     if (!hasInitializedThreads) {
 //         numThreads = getNumProcessors();
@@ -677,7 +682,8 @@ void CpuCalcDispersionPmeReciprocalForceKernel::initialize(int xsize, int ysize,
     recipEterm.resize(gridx*gridy*gridz);
 
     // Initialize FFTW.
-
+    {
+    std::lock_guard lock(fftw_mutex);
     // for (int i = 0; i < numThreads; i++)
     tempGrid.push_back((float*) fftwf_malloc(sizeof(float)*(gridx*gridy*gridz+3)));
     realGrid = tempGrid[0];
@@ -686,6 +692,7 @@ void CpuCalcDispersionPmeReciprocalForceKernel::initialize(int xsize, int ysize,
     forwardFFT = fftwf_plan_dft_r2c_3d(gridx, gridy, gridz, realGrid, complexGrid, FFTW_MEASURE);
     backwardFFT = fftwf_plan_dft_c2r_3d(gridx, gridy, gridz, complexGrid, realGrid, FFTW_MEASURE);
     hasCreatedPlan = true;
+    }
 
     // Initialize the b-spline moduli.
 
@@ -745,6 +752,7 @@ void CpuCalcDispersionPmeReciprocalForceKernel::initialize(int xsize, int ysize,
 
 CpuCalcDispersionPmeReciprocalForceKernel::~CpuCalcDispersionPmeReciprocalForceKernel() {
     isDeleted = true;
+    std::lock_guard lock(fftw_mutex);
     for (auto grid : tempGrid)
         fftwf_free(grid);
     if (complexGrid != NULL)
