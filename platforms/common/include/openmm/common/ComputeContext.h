@@ -1,6 +1,6 @@
-Do not use this file.
 #ifndef OPENMM_COMPUTECONTEXT_H_
 #define OPENMM_COMPUTECONTEXT_H_
+// Do not use this file.
 
 /* -------------------------------------------------------------------------- *
  *                                   OpenMM                                   *
