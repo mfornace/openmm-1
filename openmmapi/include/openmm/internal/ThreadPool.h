@@ -65,29 +65,29 @@ public:
     /**
      * Get the number of worker threads in the pool.
      */
-    int getNumThreads() const;
+    int getNumThreads() const {return 1;}
     /**
      * Execute a Task in parallel on the worker threads.
      */
-    void execute(Task& task);
+    // void execute(Task& task);
     /**
      * Execute a function in parallel on the worker threads.
      */
-    void execute(std::function<void (ThreadPool&, int)> task);
+    void execute(std::function<void (ThreadPool&, int)> task) {task(*this, 0);}
     /**
      * This is called by the worker threads to block until all threads have reached the same point
      * and the master thread instructs them to continue by calling resumeThreads().
      */
-    void syncThreads();
+    void syncThreads() {throw std::runtime_error("Not implemented");}
     /**
      * This is called by the master thread to wait until all threads have completed the Task.  Alternatively,
      * if the threads call syncThreads(), this blocks until all threads have reached the synchronization point.
      */
-    void waitForThreads();
+    void waitForThreads() {}
     /**
      * Instruct the threads to resume running after blocking at a synchronization point.
      */
-    void resumeThreads();
+    void resumeThreads() {throw std::runtime_error("Not implemented");}
 private:
     bool isDeleted;
     int numThreads, waitCount;
@@ -106,7 +106,7 @@ class OPENMM_EXPORT ThreadPool::Task {
 public:
     /**
      * Execute the task on each thread.
-     * 
+     *
      * @param pool         the ThreadPool being used to execute the task
      * @param threadIndex  the index of the thread invoking this method
      */

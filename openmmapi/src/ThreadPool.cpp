@@ -101,43 +101,43 @@ ThreadPool::~ThreadPool() {
     // pthread_cond_destroy(&endCondition);
 }
 
-int ThreadPool::getNumThreads() const {
-    return numThreads;
-}
+// int ThreadPool::getNumThreads() const {
+//     return numThreads;
+// }
 
-void ThreadPool::execute(Task& task) {
-    task.execute(*this, 0);
-    // currentTask = &task;
-    // resumeThreads();
-}
+// void ThreadPool::execute(Task& task) {
+//     task.execute(*this, 0);
+//     // currentTask = &task;
+//     // resumeThreads();
+// }
 
-void ThreadPool::execute(function<void (ThreadPool&, int)> task) {
-    task(*this, 0);
+// void ThreadPool::execute(function<void (ThreadPool&, int)> task) {
+    // task(*this, 0);
     // currentTask = NULL;
     // currentFunction = task;
     // resumeThreads();
-}
+// }
 
-void ThreadPool::syncThreads() {
+// void ThreadPool::syncThreads() {
     // pthread_mutex_lock(&lock);
     // waitCount++;
     // pthread_cond_signal(&endCondition);
     // pthread_cond_wait(&startCondition, &lock);
     // pthread_mutex_unlock(&lock);
-}
+// }
 
-void ThreadPool::waitForThreads() {
+// void ThreadPool::waitForThreads() {
     // pthread_mutex_lock(&lock);
     // while (waitCount < numThreads)
     //     pthread_cond_wait(&endCondition, &lock);
     // pthread_mutex_unlock(&lock);
-}
+// }
 
-void ThreadPool::resumeThreads() {
+// void ThreadPool::resumeThreads() {
     // pthread_mutex_lock(&lock);
     // waitCount = 0;
     // pthread_cond_broadcast(&startCondition);
     // pthread_mutex_unlock(&lock);
-}
+// }
 
 } // namespace OpenMM

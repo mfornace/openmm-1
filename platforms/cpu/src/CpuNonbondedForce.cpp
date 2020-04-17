@@ -378,7 +378,7 @@ void CpuNonbondedForce::calculateReciprocalIxn(int numberOfAtoms, float* posq, c
 void CpuNonbondedForce::calculateDirectIxn(int numberOfAtoms, float* posq, const vector<Vec3>& atomCoordinates, const vector<pair<float, float> >& atomParameters,
                                            const vector<float>& C6params, const vector<set<int> >& exclusions, vector<AlignedArray<float> >& threadForce, double* totalEnergy, ThreadPool& threads) {
     // Record the parameters for the threads.
-    
+
     this->numberOfAtoms = numberOfAtoms;
     this->posq = posq;
     this->atomCoordinates = &atomCoordinates[0];
@@ -389,22 +389,22 @@ void CpuNonbondedForce::calculateDirectIxn(int numberOfAtoms, float* posq, const
     includeEnergy = (totalEnergy != NULL);
     threadEnergy.resize(threads.getNumThreads());
     atomicCounter = 0;
-    
+
     // Signal the threads to start running and wait for them to finish.
-    
-    threads.execute([&] (ThreadPool& threads, int threadIndex) { threadComputeDirect(threads, threadIndex); });
-    threads.waitForThreads();
-    
+
+    // threads.execute([&] (ThreadPool& threads, int threadIndex) {  });
+    // threads.waitForThreads();
+    threadComputeDirect(threads, 0);
     // Signal the threads to subtract the exclusions.
-    
-    if (ewald || pme) {
-        atomicCounter = 0;
-        threads.resumeThreads();
-        threads.waitForThreads();
-    }
-    
+
+    // if (ewald || pme) {
+    //     atomicCounter = 0;
+    //     threads.resumeThreads();
+    //     threads.waitForThreads();
+    // }
+
     // Combine the energies from all the threads.
-    
+
     if (totalEnergy != NULL) {
         double directEnergy = 0;
         int numThreads = threads.getNumThreads();
@@ -433,8 +433,7 @@ void CpuNonbondedForce::threadComputeDirect(ThreadPool& threads, int threadIndex
         }
 
         // Now subtract off the exclusions, since they were implicitly included in the reciprocal space sum.
-
-        threads.syncThreads();
+        atomicCounter = 0;
         const int groupSize = max(1, numberOfAtoms/(10*numThreads));
         while (true) {
             int start = atomicCounter.fetch_add(groupSize);
