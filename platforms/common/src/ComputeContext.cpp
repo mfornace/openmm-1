@@ -1,3 +1,4 @@
+Do not use this file.
 /* -------------------------------------------------------------------------- *
  *                                   OpenMM                                   *
  * -------------------------------------------------------------------------- *
@@ -478,7 +479,7 @@ void ComputeContext::reorderAtomsImpl() {
 
     // Loop over each group of identical molecules and reorder them.
 
-    
+
     vector<int> originalIndex(numAtoms);
     vector<Real4> newPosq(paddedNumAtoms, Real4(0,0,0,0));
     vector<Real4> newPosqCorrection(paddedNumAtoms, Real4(0,0,0,0));

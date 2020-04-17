@@ -1,3 +1,4 @@
+Do not use this file.
 #ifndef OPENMM_COMPUTECONTEXT_H_
 #define OPENMM_COMPUTECONTEXT_H_
 
@@ -319,7 +320,7 @@ public:
     /**
      * Get a pointer to a block of pinned memory that can be used for asynchronous transfers between host and device.
      * This is guaranteed to be at least as large as any of the arrays returned by methods of this class.
-     * 
+     *
      * Because this buffer is freely available to all code, care is needed to avoid conflicts.  Only access this
      * buffer from the main thread, and make sure all transfers are complete before you invoke any other code that
      * might make use of it
@@ -327,7 +328,7 @@ public:
     virtual void* getPinnedBuffer() = 0;
     /**
      * Get a shared ThreadPool that code can use to parallelize operations.
-     * 
+     *
      * Because this object is freely available to all code, care is needed to avoid conflicts.  Only use it
      * from the main thread, and make sure all operations are complete before you invoke any other code that
      * might make use of it
@@ -377,7 +378,7 @@ public:
     /**
      * Set the vectors defining the periodic box.
      */
-    virtual void setPeriodicBoxVectors(const Vec3& a, const Vec3& b, const Vec3& c) = 0; 
+    virtual void setPeriodicBoxVectors(const Vec3& a, const Vec3& b, const Vec3& c) = 0;
     /**
      * Get the IntegrationUtilities for this context.
      */
@@ -418,7 +419,7 @@ public:
      * Register that the derivative of potential energy with respect to a context parameter
      * will need to be calculated.  If this is called multiple times for a single parameter,
      * it is only added to the list once.
-     * 
+     *
      * @param param    the name of the parameter to add
      */
     virtual void addEnergyParameterDerivative(const std::string& param) = 0;
@@ -426,7 +427,7 @@ public:
      * Mark that the current molecule definitions (and hence the atom order) may be invalid.
      * This should be called whenever force field parameters change.  It will cause the definitions
      * and order to be revalidated.
-     * 
+     *
      * If you know which force has changed, calling the alternate form that takes a ComputeForceInfo
      * is more efficient.
      */

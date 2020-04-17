@@ -57,7 +57,7 @@ static void* threadBody(void* args) {
     ThreadPool::ThreadData& data = *reinterpret_cast<ThreadPool::ThreadData*>(args);
     while (true) {
         // Wait for the signal to start running.
-        
+
         data.owner.syncThreads();
         if (data.isDeleted)
             break;
@@ -68,37 +68,37 @@ static void* threadBody(void* args) {
 }
 
 ThreadPool::ThreadPool(int numThreads) : currentTask(NULL) {
-    if (numThreads <= 0)
-        numThreads = getNumProcessors();
-    this->numThreads = numThreads;
-    pthread_cond_init(&startCondition, NULL);
-    pthread_cond_init(&endCondition, NULL);
-    pthread_mutex_init(&lock, NULL);
-    thread.resize(numThreads);
-    pthread_mutex_lock(&lock);
-    waitCount = 0;
-    for (int i = 0; i < numThreads; i++) {
-        ThreadData* data = new ThreadData(*this, i);
-        data->isDeleted = false;
-        threadData.push_back(data);
-        pthread_create(&thread[i], NULL, threadBody, data);
-    }
-    while (waitCount < numThreads)
-        pthread_cond_wait(&endCondition, &lock);
-    pthread_mutex_unlock(&lock);
+    // if (numThreads <= 0)
+    //     numThreads = getNumProcessors();
+    this->numThreads = 1;//numThreads;
+    // pthread_cond_init(&startCondition, NULL);
+    // pthread_cond_init(&endCondition, NULL);
+    // pthread_mutex_init(&lock, NULL);
+    // thread.resize(numThreads);
+    // pthread_mutex_lock(&lock);
+    // waitCount = 0;
+    // for (int i = 0; i < numThreads; i++) {
+    //     ThreadData* data = new ThreadData(*this, i);
+    //     data->isDeleted = false;
+    //     threadData.push_back(data);
+    //     pthread_create(&thread[i], NULL, threadBody, data);
+    // }
+    // while (waitCount < numThreads)
+    //     pthread_cond_wait(&endCondition, &lock);
+    // pthread_mutex_unlock(&lock);
 }
 
 ThreadPool::~ThreadPool() {
-    for (auto data : threadData)
-        data->isDeleted = true;
-    pthread_mutex_lock(&lock);
-    pthread_cond_broadcast(&startCondition);
-    pthread_mutex_unlock(&lock);
-    for (auto t : thread)
-        pthread_join(t, NULL);
-    pthread_mutex_destroy(&lock);
-    pthread_cond_destroy(&startCondition);
-    pthread_cond_destroy(&endCondition);
+    // for (auto data : threadData)
+    //     data->isDeleted = true;
+    // pthread_mutex_lock(&lock);
+    // pthread_cond_broadcast(&startCondition);
+    // pthread_mutex_unlock(&lock);
+    // for (auto t : thread)
+    //     pthread_join(t, NULL);
+    // pthread_mutex_destroy(&lock);
+    // pthread_cond_destroy(&startCondition);
+    // pthread_cond_destroy(&endCondition);
 }
 
 int ThreadPool::getNumThreads() const {
@@ -106,36 +106,38 @@ int ThreadPool::getNumThreads() const {
 }
 
 void ThreadPool::execute(Task& task) {
-    currentTask = &task;
-    resumeThreads();
+    task.execute(*this, 0);
+    // currentTask = &task;
+    // resumeThreads();
 }
 
 void ThreadPool::execute(function<void (ThreadPool&, int)> task) {
-    currentTask = NULL;
-    currentFunction = task;
-    resumeThreads();
+    task(*this, 0);
+    // currentTask = NULL;
+    // currentFunction = task;
+    // resumeThreads();
 }
 
 void ThreadPool::syncThreads() {
-    pthread_mutex_lock(&lock);
-    waitCount++;
-    pthread_cond_signal(&endCondition);
-    pthread_cond_wait(&startCondition, &lock);
-    pthread_mutex_unlock(&lock);
+    // pthread_mutex_lock(&lock);
+    // waitCount++;
+    // pthread_cond_signal(&endCondition);
+    // pthread_cond_wait(&startCondition, &lock);
+    // pthread_mutex_unlock(&lock);
 }
 
 void ThreadPool::waitForThreads() {
-    pthread_mutex_lock(&lock);
-    while (waitCount < numThreads)
-        pthread_cond_wait(&endCondition, &lock);
-    pthread_mutex_unlock(&lock);
+    // pthread_mutex_lock(&lock);
+    // while (waitCount < numThreads)
+    //     pthread_cond_wait(&endCondition, &lock);
+    // pthread_mutex_unlock(&lock);
 }
 
 void ThreadPool::resumeThreads() {
-    pthread_mutex_lock(&lock);
-    waitCount = 0;
-    pthread_cond_broadcast(&startCondition);
-    pthread_mutex_unlock(&lock);
+    // pthread_mutex_lock(&lock);
+    // waitCount = 0;
+    // pthread_cond_broadcast(&startCondition);
+    // pthread_mutex_unlock(&lock);
 }
 
 } // namespace OpenMM
