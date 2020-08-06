@@ -37,6 +37,7 @@
 #include <functional>
 #include <pthread.h>
 #include <vector>
+#include <stdexcept> 
 
 namespace OpenMM {
 
