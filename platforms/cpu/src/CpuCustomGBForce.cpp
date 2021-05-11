@@ -139,6 +139,7 @@ CpuCustomGBForce::CpuCustomGBForce(int numAtoms, const std::vector<std::set<int>
                      const vector<string>& parameterNames, ThreadPool& threads) :
             exclusions(exclusions), cutoff(false), periodic(false), valueTypes(valueTypes), energyTypes(energyTypes), numValues(valueNames.size()),
             numParams(parameterNames.size()), threads(threads) {
+    if (threads.getNumThreads() != 1) throw std::invalid_argument("parallelism disabled");
     for (int i = 0; i < threads.getNumThreads(); i++)
         threadData.push_back(new ThreadData(numAtoms, threads.getNumThreads(), i, valueExpressions, valueDerivExpressions, valueGradientExpressions,
                 valueParamDerivExpressions, valueNames, energyExpressions, energyDerivExpressions, energyGradientExpressions, energyParamDerivExpressions, parameterNames));
@@ -181,7 +182,7 @@ void CpuCustomGBForce::calculateIxn(int numberOfAtoms, float* posq, vector<vecto
                                            map<string, double>& globalParameters, vector<AlignedArray<float> >& threadForce,
                                            bool includeForce, bool includeEnergy, double& totalEnergy, double* energyParamDerivs) {
     // Record the parameters for the threads.
-    
+
     this->numberOfAtoms = numberOfAtoms;
     this->posq = posq;
     this->atomParameters = &atomParameters[0];
@@ -193,67 +194,20 @@ void CpuCustomGBForce::calculateIxn(int numberOfAtoms, float* posq, vector<vecto
 
     // Calculate the first computed value.
 
-    auto task = [&] (ThreadPool& threads, int threadIndex) { threadComputeForce(threads, threadIndex); };
     atomicCounter = 0;
-    threads.execute(task);
-    threads.waitForThreads();
 
-    // Sum derivatives of the first computed value with respect to global parameters.
-
-    bool hasParamDerivs = (threadData[0]->dValue0dParam.size() > 0);
-    if (hasParamDerivs) {
-        threads.resumeThreads();
-        threads.waitForThreads();
-    }
-    
-    // Calculate the remaining computed values.
-    
-    threads.resumeThreads();
-    threads.waitForThreads();
-    
-    // Calculate the energy terms.
-
-    for (int i = 0; i < (int) threadData[0]->energyExpressions.size(); i++) {
-        atomicCounter = 0;
-        threads.execute(task);
-        threads.waitForThreads();
-    }
-
-    // Sum the energy derivatives.
-
-    threads.resumeThreads();
-    threads.waitForThreads();
-    
-    // Apply the chain rule to evaluate forces.
-
-    atomicCounter = 0;
-    threads.resumeThreads();
-    threads.waitForThreads();
-
-    // Combine the energies from all the threads.
-    
-    if (includeEnergy) {
-        int numThreads = threads.getNumThreads();
-        for (int i = 0; i < numThreads; i++)
-            totalEnergy += threadEnergy[i];
-    }
-    if (hasParamDerivs)
-        for (int i = 0; i < threads.getNumThreads(); i++)
-            for (int j = 0; j < threadData[i]->energyParamDerivs.size(); j++)
-                energyParamDerivs[j] += threadData[i]->energyParamDerivs[j];
-}
-
-void CpuCustomGBForce::threadComputeForce(ThreadPool& threads, int threadIndex) {
-    // Compute this thread's subset of interactions.
+    /******************************************************************************/
 
     int numThreads = threads.getNumThreads();
+    constexpr int const threadIndex = 0;
+    if (numThreads != 1) throw std::runtime_error("parallel not supported");
     threadEnergy[threadIndex] = 0;
     double& energy = threadEnergy[threadIndex];
-    float* forces = &(*threadForce)[threadIndex][0];
+    float* forces = &threadForce[threadIndex][0];
     ThreadData& data = *threadData[threadIndex];
     fvec4 boxSize(periodicBoxSize[0], periodicBoxSize[1], periodicBoxSize[2], 0);
     fvec4 invBoxSize((1/periodicBoxSize[0]), (1/periodicBoxSize[1]), (1/periodicBoxSize[2]), 0);
-    for (auto& param : *globalParameters)
+    for (auto& param : globalParameters)
         data.expressionSet.setVariable(data.expressionSet.getVariableIndex(param.first), param.second);
 
     // Calculate the first computed value.
@@ -264,14 +218,15 @@ void CpuCustomGBForce::threadComputeForce(ThreadPool& threads, int threadIndex) 
         for (auto& v : vals)
             v = 0.0f;
     if (valueTypes[0] == CustomGBForce::ParticlePair)
-        calculateParticlePairValue(0, data, numberOfAtoms, posq, atomParameters, true, boxSize, invBoxSize);
+        calculateParticlePairValue(0, data, numberOfAtoms, posq, this->atomParameters, true, boxSize, invBoxSize);
     else
-        calculateParticlePairValue(0, data, numberOfAtoms, posq, atomParameters, false, boxSize, invBoxSize);
-    threads.syncThreads();
-    
+        calculateParticlePairValue(0, data, numberOfAtoms, posq, this->atomParameters, false, boxSize, invBoxSize);
+
+    /******************************************************************************/
+
     // Sum derivatives of the first computed value with respect to global parameters.
-    
-    bool hasParamDerivs = (data.dValue0dParam.size() > 0);
+
+    bool hasParamDerivs = (threadData[0]->dValue0dParam.size() > 0);
     if (hasParamDerivs) {
         for (int j = 0; j < data.dValue0dParam.size(); j++)
             for (int k = data.firstAtom; k < data.lastAtom; k++) {
@@ -280,11 +235,11 @@ void CpuCustomGBForce::threadComputeForce(ThreadPool& threads, int threadIndex) 
                     sum += threadData[m]->dValue0dParam[j][k];
                 dValuedParam[0][j][k] = sum;
             }
-        threads.syncThreads();
     }
 
-    // Sum the first computed value and calculate the remaining ones.
+    /******************************************************************************/
 
+    // Calculate the remaining computed values.
     int numValues = valueTypes.size();
     for (int atom = data.firstAtom; atom < data.lastAtom; atom++) {
         float sum = 0.0f;
@@ -313,8 +268,8 @@ void CpuCustomGBForce::threadComputeForce(ThreadPool& threads, int threadIndex) 
             }
         }
     }
-    threads.syncThreads();
 
+    /******************************************************************************/
     // Now calculate the energy and its derivatives.
 
     for (auto& vals : data.dEdV)
@@ -323,15 +278,16 @@ void CpuCustomGBForce::threadComputeForce(ThreadPool& threads, int threadIndex) 
     for (auto& v : data.energyParamDerivs)
         v = 0.0f;
     for (int termIndex = 0; termIndex < (int) data.energyExpressions.size(); termIndex++) {
+        atomicCounter = 0;
         if (energyTypes[termIndex] == CustomGBForce::SingleParticle)
-            calculateSingleParticleEnergyTerm(termIndex, data, numberOfAtoms, posq, atomParameters, forces, energy);
+            calculateSingleParticleEnergyTerm(termIndex, data, numberOfAtoms, posq, this->atomParameters, forces, energy);
         else if (energyTypes[termIndex] == CustomGBForce::ParticlePair)
-            calculateParticlePairEnergyTerm(termIndex, data, numberOfAtoms, posq, atomParameters, true, forces, energy, boxSize, invBoxSize);
+            calculateParticlePairEnergyTerm(termIndex, data, numberOfAtoms, posq, this->atomParameters, true, forces, energy, boxSize, invBoxSize);
         else
-            calculateParticlePairEnergyTerm(termIndex, data, numberOfAtoms, posq, atomParameters, false, forces, energy, boxSize, invBoxSize);
-        threads.syncThreads();
+            calculateParticlePairEnergyTerm(termIndex, data, numberOfAtoms, posq, this->atomParameters, false, forces, energy, boxSize, invBoxSize);
     }
 
+    /******************************************************************************/
     // Sum the energy derivatives.
 
     for (int atom = data.firstAtom; atom < data.lastAtom; atom++) {
@@ -342,11 +298,25 @@ void CpuCustomGBForce::threadComputeForce(ThreadPool& threads, int threadIndex) 
             dEdV[i][atom] = sum;
         }
     }
-    threads.syncThreads();
 
+    /******************************************************************************/
     // Apply the chain rule to evaluate forces.
 
-    calculateChainRuleForces(data, numberOfAtoms, posq, atomParameters, forces, boxSize, invBoxSize);
+    atomicCounter = 0;
+    calculateChainRuleForces(data, numberOfAtoms, posq, this->atomParameters, forces, boxSize, invBoxSize);
+
+    /******************************************************************************/
+    // Combine the energies from all the threads.
+
+    if (includeEnergy) {
+        int numThreads = threads.getNumThreads();
+        for (int i = 0; i < numThreads; i++)
+            totalEnergy += threadEnergy[i];
+    }
+    if (hasParamDerivs)
+        for (int i = 0; i < threads.getNumThreads(); i++)
+            for (int j = 0; j < threadData[i]->energyParamDerivs.size(); j++)
+                energyParamDerivs[j] += threadData[i]->energyParamDerivs[j];
 }
 
 void CpuCustomGBForce::calculateParticlePairValue(int index, ThreadData& data, int numAtoms, float* posq, vector<double>* atomParameters,
@@ -415,9 +385,9 @@ void CpuCustomGBForce::calculateOnePairValue(int index, int atom1, int atom2, Th
         data.particleValue[i*2+1] = values[i][atom2];
     }
     valueArray[atom1] += (float) data.valueExpressions[index].evaluate();
-    
+
     // Calculate derivatives with respect to parameters.
-    
+
     for (int i = 0; i < data.valueParamDerivExpressions[index].size(); i++)
         data.dValue0dParam[i][atom1] += data.valueParamDerivExpressions[index][i].evaluate();
 }
@@ -439,9 +409,9 @@ void CpuCustomGBForce::calculateSingleParticleEnergyTerm(int index, ThreadData& 
         forces[4*i+0] -= (float) data.energyGradientExpressions[index][0].evaluate();
         forces[4*i+1] -= (float) data.energyGradientExpressions[index][1].evaluate();
         forces[4*i+2] -= (float) data.energyGradientExpressions[index][2].evaluate();
-        
+
         // Compute derivatives with respect to parameters.
-        
+
         for (int k = 0; k < data.energyParamDerivExpressions[index].size(); k++)
             data.energyParamDerivs[k] += data.energyParamDerivExpressions[index][k].evaluate();
     }
@@ -527,7 +497,7 @@ void CpuCustomGBForce::calculateOnePairEnergyTerm(int index, int atom1, int atom
         data.dEdV[i][atom1] += (float) data.energyDerivExpressions[index][2*i+1].evaluate();
         data.dEdV[i][atom2] += (float) data.energyDerivExpressions[index][2*i+2].evaluate();
     }
-        
+
     // Compute derivatives with respect to parameters.
 
     for (int i = 0; i < data.energyParamDerivExpressions[index].size(); i++)
@@ -602,7 +572,7 @@ void CpuCustomGBForce::calculateChainRuleForces(ThreadData& data, int numAtoms, 
             forces[4*i+2] -= dEdV[j][i]*data.dVdZ[j];
         }
     }
-        
+
     // Compute chain rule terms for derivatives with respect to parameters.
 
     for (int i = data.firstAtom; i < data.lastAtom; i++)
